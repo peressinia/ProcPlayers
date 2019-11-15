@@ -4,7 +4,7 @@
 #																									#
 # 		version 2.0 																				#
 # 		Tony Peressini																				#
-# 		November 6, 2019																			#
+# 		November 15, 2019																			#
 #																									#
 #	Function: To process player GSR sync data from Guastello lab ...								#
 #				- utilzing revised nonlinear model from 2019 NSF Proposal   						#
@@ -153,7 +153,9 @@ PLEVEL <- 0.05										# p level for Delta coef
 			 if (rSq<0.0) rSq<-0.0								# Make R^2 zero if it is less than zero for Sync matrix
 		 	 pList[[i]]$NonLinearAuto["rsq"]<-rSq
 		  	 pList[[i]]$NonLinearAuto["B"]<-coef(theFit)["beta"]
-			 syncMatrixNL[i,i]<-sqrt(rSq)
+			 syncMatrixNL1[i,i]<-sqrt(rSq)
+			 syncMatrixNL2[i,i]<-sqrt(rSq)
+			 syncMatrixNL3[i,i]<-sqrt(rSq)
 			 writeLines(nlmOut(theFit))
 			 cat("----------------------------------------------------\n\n")
 		 }
@@ -192,10 +194,14 @@ PLEVEL <- 0.05										# p level for Delta coef
 			pI<-dsz[[i]]
 			pIl<- c(rep(NA,times=LAG),dsz[[i]][1:(length(dsz[[i]])-LAG)])
 			pJl<-c(rep(NA,times=LAG),dsz[[j]][1:(length(dsz[[j]])-LAG)])
-			theFit <- nlsLM(pI ~ alpha*exp(beta * pIl) + exp(delt * pJl), start=c(alpha=0.5,beta=0.5,delt=0.5), na.action = na.exclude )
+			theFit <- nlsLM(pI ~ alpha*(pIl* pJl) + beta*( pIl^2 * pJl), start=c(alpha=0.5,beta=0.5), na.action = na.exclude )
 		 	rSq <- 1-(deviance(theFit)/sum((pI-mean(pI))^2))   	# R^2 = 1 - [ (Residual Sum of Squares / Corrected Sum of Squares) ]
 		 	theFit$control[1]<-rSq								# store r-squared in theFit$control for printing convenience in nlmOut 
-			if (summary(theFit)[["coefficients"]]["delt","Pr(>|t|)"]<PLEVEL) syncMatrixNL2[j,i]<-coef(theFit)["delt"] else syncMatrixNL2[j,i]<-0.0
+		
+		#Not sure what this line should be - no delta in this regression..
+		
+		#	if (summary(theFit)[["coefficients"]]["delt","Pr(>|t|)"]<PLEVEL) syncMatrixNL2[j,i]<-coef(theFit)["delt"] else syncMatrixNL2[j,i]<-0.0
+		
 			# begin new
 			aitch<-sqrt( abs(rSq-pList[[i]]$NonLinearAuto["rsq"]) )          # h = sqrt( this r^2 - auto corr r^2 of this row[i] )
 			pList[[i]]$NonLinearSync2[[j]]["rsq"]<-aitch
