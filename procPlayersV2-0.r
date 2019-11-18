@@ -131,34 +131,35 @@ PLEVEL <- 0.05										# p level for Delta coef
 	 cat(sprintf("==================================================\n"))
 	 cat(sprintf("Analyzing Player %d as independent variable (I=%d)\n", i,i))
  	 cat(sprintf("==================================================\n"))
+
+	 #  Linear Autoregression
+	 cat(sprintf("... Player %d LINEAR autocorrelation (I=%d)\n", i,i))
+	 ded=ts.intersect(pI=ts(dsz[i]), pIl=lag( ts(dsz[i]) ,-LAG) )	
+	 theFit<-lm( pI ~ pIl, data=ded, na.action=NULL )
+	 pList[[i]]$LinearAutoCorr["rsq"]<-summary(theFit)$r.squared	
+	 syncMatrixL[i,i]<-sqrt(summary(theFit)$r.squared)
+	 stargazer(theFit, type = "text")
+	 cat("----------------------------------------------------\n\n")
+	 
+	 #  nonLinear autoRegression Pi on lag(Pi)
+	 cat(sprintf("... Player %d NONLINEAR autocorrelation (I=%d)\n", i,i))
+	 pI<-dsz[[i]]
+	 pIl<- c(rep(NA,times=LAG),dsz[[i]][1:(length(dsz[[i]])-LAG)])
+	 theFit <- nlsLM(pI ~ alpha*exp(beta * pIl), start=c(alpha=0.5,beta=0.5), na.action = na.exclude )
+	 rSq <- 1-(deviance(theFit)/sum((pI-mean(pI))^2))   # R^2 = 1 - [ (Residual Sum of Squares / Corrected Sum of Squares) ]
+	 theFit$control[1]<-rSq								# store r-squared in theFit$control for printing convenience in nlmOut
+	 if (rSq<0.0) rSq<-0.0								# Make R^2 zero if it is less than zero for Sync matrix
+ 	 pList[[i]]$NonLinearAuto["rsq"]<-rSq
+  	 pList[[i]]$NonLinearAuto["B"]<-coef(theFit)["beta"]
+	 syncMatrixNL1[i,i]<-sqrt(rSq)
+	 syncMatrixNL2[i,i]<-sqrt(rSq)
+	 syncMatrixNL3[i,i]<-sqrt(rSq)
+	 writeLines(nlmOut(theFit))
+	 cat("----------------------------------------------------\n\n")
+	  
 	 for (j in 1:N ) {
-	
-		 if (i==j)	{
-			 #  Linear Autoregression
-			 cat(sprintf("... Player %d LINEAR autocorrelation (I=%d)\n", i,i))
-			 ded=ts.intersect(pI=ts(dsz[i]), pIl=lag( ts(dsz[i]) ,-LAG) )	
-			 theFit<-lm( pI ~ pIl, data=ded, na.action=NULL )
-			 pList[[i]]$LinearAutoCorr["rsq"]<-summary(theFit)$r.squared	
-			 syncMatrixL[i,i]<-sqrt(summary(theFit)$r.squared)
-			 stargazer(theFit, type = "text")
-			 cat("----------------------------------------------------\n\n")
-			 
-			 #  nonLinear autoRegression Pi on lag(Pi)
-			 cat(sprintf("... Player %d NONLINEAR autocorrelation (I=%d)\n", i,i))
-			 pI<-dsz[[i]]
-			 pIl<- c(rep(NA,times=LAG),dsz[[i]][1:(length(dsz[[i]])-LAG)])
-			 theFit <- nlsLM(pI ~ alpha*exp(beta * pIl), start=c(alpha=0.5,beta=0.5), na.action = na.exclude )
-			 rSq <- 1-(deviance(theFit)/sum((pI-mean(pI))^2))   # R^2 = 1 - [ (Residual Sum of Squares / Corrected Sum of Squares) ]
-			 theFit$control[1]<-rSq								# store r-squared in theFit$control for printing convenience in nlmOut
-			 if (rSq<0.0) rSq<-0.0								# Make R^2 zero if it is less than zero for Sync matrix
-		 	 pList[[i]]$NonLinearAuto["rsq"]<-rSq
-		  	 pList[[i]]$NonLinearAuto["B"]<-coef(theFit)["beta"]
-			 syncMatrixNL1[i,i]<-sqrt(rSq)
-			 syncMatrixNL2[i,i]<-sqrt(rSq)
-			 syncMatrixNL3[i,i]<-sqrt(rSq)
-			 writeLines(nlmOut(theFit))
-			 cat("----------------------------------------------------\n\n")
-		 }
+		
+		 if (i==j)	{} 	# DO nothing - already handled the "diagonal" outside j-loop 
 		 else	{
 			#  Linear Regression Pi on lag(Pi) + lag(Pj)
 			cat(sprintf("... Player %d LINEAR regression on Player %d (I=%d, J=%d)\n", i,j,i,j))
@@ -171,7 +172,8 @@ PLEVEL <- 0.05										# p level for Delta coef
 			stargazer(theFit, type = "text")	
 			cat("----------------------------------------------------\n\n")
 			
-			#  Opt 1: nonLinear Regression Pi on lag(Pi) + lag(Pj)
+			#  Opt 1: nonLinear Regression Pi on lag(Pi) + lag(Pj):  z_2 = Ae^{Bz_1} model with H
+			#
 			cat(sprintf("... Player %d NONLINEAR regression Opt 1 on Player %d (I=%d, J=%d)\n", i,j,i,j))
 			pI<-dsz[[i]]
 			pIl<- c(rep(NA,times=LAG),dsz[[i]][1:(length(dsz[[i]])-LAG)])
@@ -189,29 +191,46 @@ PLEVEL <- 0.05										# p level for Delta coef
 			writeLines(nlmOut(theFit))
 			cat("----------------------------------------------------\n\n")	
 			
-			#  Opt 2: nonLinear Regression Pi on lag(Pi) + lag(Pj)
+			
+			
+			#  Opt 2: nonLinear Regression Pi on lag(Pi) + lag(Pj):  X_2 =P_1X_1(1−X_1) with H
+			#
 			cat(sprintf("... Player %d NONLINEAR regression Opt 2 on Player %d (I=%d, J=%d)\n", i,j,i,j))
 			pI<-dsz[[i]]
 			pIl<- c(rep(NA,times=LAG),dsz[[i]][1:(length(dsz[[i]])-LAG)])
 			pJl<-c(rep(NA,times=LAG),dsz[[j]][1:(length(dsz[[j]])-LAG)])
-			theFit <- nlsLM(pI ~ alpha*(pIl* pJl) + beta*( pIl^2 * pJl), start=c(alpha=0.5,beta=0.5), na.action = na.exclude )
-		 	rSq <- 1-(deviance(theFit)/sum((pI-mean(pI))^2))   	# R^2 = 1 - [ (Residual Sum of Squares / Corrected Sum of Squares) ]
+		
+		#	theFit <- nlsLM(pI ~ alpha*(pIl* pJl) + beta*( pIl^2 * pJl), start=c(alpha=0.5,beta=0.5), na.action = na.exclude )
+		#	rSq <- 1-(deviance(theFit)/sum((pI-mean(pI))^2))   	# R^2 = 1 - [ (Residual Sum of Squares / Corrected Sum of Squares) ]
+			theFit<-lm( pI ~ (pIl*pJl) + (pIl^2+pJl), na.action=na.exclude )
+			rSq<-summary(theFit)["r.squared"]
+		 	
+			
 		 	theFit$control[1]<-rSq								# store r-squared in theFit$control for printing convenience in nlmOut 
 		
 		#Not sure what this line should be - no delta in this regression..
 		
-		#	if (summary(theFit)[["coefficients"]]["delt","Pr(>|t|)"]<PLEVEL) syncMatrixNL2[j,i]<-coef(theFit)["delt"] else syncMatrixNL2[j,i]<-0.0
+		
 		
 			# begin new
-			aitch<-sqrt( abs(rSq-pList[[i]]$NonLinearAuto["rsq"]) )          # h = sqrt( this r^2 - auto corr r^2 of this row[i] )
+			aitch<-sqrt(summary(theFit)$r.squared) #???? from linear
+			#sqrt( abs(rSq-pList[[i]]$NonLinearAuto["rsq"]) )          # h = sqrt( this r^2 - auto corr r^2 of this row[i] )
 			pList[[i]]$NonLinearSync2[[j]]["rsq"]<-aitch
 			# end new
-			pList[[i]]$NonLinearSync2[[j]]["B"]<-coef(theFit)["beta"]
-		 	pList[[i]]$NonLinearSync2[[j]]["D"]<-syncMatrixNL2[j,i]			# it gets 0.0 if insignificant 
+			
+			#	if (summary(theFit)[["coefficients"]]["delt","Pr(>|t|)"]<PLEVEL) syncMatrixNL2[j,i]<-coef(theFit)["delt"] else syncMatrixNL2[j,i]<-0.0
+				syncMatrixNL2[j,i]<-aitch
+			
+			# pList[[i]]$NonLinearSync2[[j]]["B"]<-coef(theFit)["beta"]
+		 	# pList[[i]]$NonLinearSync2[[j]]["D"]<-syncMatrixNL2[j,i]			# it gets 0.0 if insignificant 
+			
+			
 			writeLines(nlmOut(theFit))
 			cat("----------------------------------------------------\n\n")	
 			
-			#  Opt 3: nonLinear Regression Pi on lag(Pi) + lag(Pj)
+			
+			#  Opt 3: nonLinear Regression Pi on lag(Pi) + lag(Pj):  z_2 = AP_1e^{Bz_1} model with H 
+			#
 			cat(sprintf("... Player %d NONLINEAR regression Opt 3 on Player %d (I=%d, J=%d)\n", i,j,i,j))
 			pI<-dsz[[i]]
 			pIl<- c(rep(NA,times=LAG),dsz[[i]][1:(length(dsz[[i]])-LAG)])
