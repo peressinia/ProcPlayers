@@ -1,55 +1,55 @@
-# ###################################################################################################
-#																									#
-# 	R Script: procPlayers																			#
-#																									#
-# 		version 2.0 																				#
-# 		Tony Peressini																				#
-# 		November 15, 2019																			#
-#																									#
-#	Function: To process player GSR sync data from Guastello lab ...								#
-#				- utilzing revised nonlinear model from 2019 NSF Proposal   						#
-#																									#
-#																									#
-#																									#
-#																									#
-#																									#
-#	Input:  User choosen CSV file with time as first column (discarded) and							#
-#			monster data as final column (discarded)												#
-#																									#
-#	Output:	Four files named the orginal filename appended with following							#
-#				(1) -out.txt,   which contains raw output of analyses for debugging/veification		#
-#				(2) -lMat.txt,  which contains the linear sync matrix for use with SyncCalc			#
-#				(3) -nlMat.txt, which contains the nonlinear sync matrix for use with SyncCalc		#
-#				(4) -sum.txt,   which contains a summary of the results of the analysis				#
-#																									#
-#																									#
-#		New in version 1.1: check for significance of delt in nlsLM at PLEVEL <- 0.05 for i!=j		#
-#							check for negative R^2 in nlsLM	for i=j									#
-#																									#
-#		Version 2.0 employs a different nonlinear model(s) from the Sec. 3.1, p. 6-7 from 2019 		#
-#			NSF proposal description.  We use Eq. 7, [SQRT (differences in R2)] as the matrix		 #
-#			entries.																				#
-#																									#
-#																									#
-#																									#
-#																									#
-#																									#
-# ###################################################################################################
+#########################################################################################################
+#													#
+# 	R Script: procPlayers										#
+#													#
+# 		version 2.0 										#
+# 		Tony Peressini										#
+# 		November 15, 2019									#
+#													#
+#	Function: To process player GSR sync data from Guastello lab ...				#
+#				- utilzing revised nonlinear model from 2019 NSF Proposal   		#
+#													#
+#													#
+#													#
+#													#
+#													#
+#	Input:  User choosen CSV file with time as first column (discarded) and				#
+#			monster data as final column (discarded)					#
+#													#
+#	Output:	Four files named the orginal filename appended with following				#
+#		(1) -out.txt,   which contains raw output of analyses for debugging/veification		#
+#		(2) -lMat.txt,  which contains the linear sync matrix for use with SyncCalc		#
+#		(3) -nlMat.txt, which contains the nonlinear sync matrix for use with SyncCalc		#
+#		(4) -sum.txt,   which contains a summary of the results of the analysis			#
+#													#
+#													#
+#	New in version 1.1: 	check for significance of delt in nlsLM at PLEVEL <- 0.05 for i!=j	#
+#				check for negative R^2 in nlsLM	for i=j					#
+#													#
+#	Version 2.0 employs a different nonlinear model(s) from the Sec. 3.1, p. 6-7 from 2019 		#
+#		NSF proposal description.  We use Eq. 7, [SQRT (differences in R2)] as the matrix	#
+#		entries.										#
+#													#
+#													#
+#													#
+#													#
+#													#
+#########################################################################################################
 
 
 # ######################
 # Library Packages Used
 # ######################
- library(foreign)									# to import `foreign' data files
- library(stargazer)									# for nice output
+ library(foreign)								# to import `foreign' data files
+ library(stargazer)								# for nice output
  library(minpack.lm)								# nlsLM routines (Levenberg-Marquardt)
 
 
 # ############
 # Constants 
 # ############
-LAG <- 1											# for the time series lag
-PLEVEL <- 0.05										# p level for Delta coef
+LAG <- 1									# for the time series lag
+PLEVEL <- 0.05									# p level for Delta coef
 
 # ######################################################################################
 # Function to convert a column in dataframe x to `t-statistic' by centering and scaling 
@@ -63,8 +63,8 @@ PLEVEL <- 0.05										# p level for Delta coef
  # ######################################################################################
  # Function to output reults of nonLinear model 
  # ######################################################################################
-  nlmOut <- function (x){									# x is the result of nls call  
-	  lsep<-"---------------------------------------"		# r-squared was stored in x$control for convenience 
+  nlmOut <- function (x){							# x is the result of nls call  
+	  lsep<-"---------------------------------------"			# r-squared was stored in x$control for convenience 
 	  outX<-capture.output(summary(x))
 	  outXf<-c(lsep,outX[2],lsep,outX[3:11],sprintf("R-Squared for fit: %6.4f",x$control[1]),outX[12:length(outX)],lsep)
 	  return(outXf)
@@ -89,20 +89,20 @@ PLEVEL <- 0.05										# p level for Delta coef
  summaryFileName<- paste(outName, "-sum.txt", sep = "")
  
  ds = read.csv(dFile)
- # head(ds)														# echo head of data to console for debugging
+ # head(ds)									# echo head of data to console for debugging
 
- dsz <- ds[ -c(1) ]												# remove first column - time 
- N<-(dim(dsz)[2])-1												# set the number of players - ignoring the last monster column
+ dsz <- ds[ -c(1) ]								# remove first column - time 
+ N<-(dim(dsz)[2])-1								# set the number of players - ignoring the last monster column
      					
- sink(paste(thePath, outFileName,sep="/"),split=FALSE)   		# to append use:  "sink(outFileName,append=TRUE)"
+ sink(paste(thePath, outFileName,sep="/"),split=FALSE)   			# to append use:  "sink(outFileName,append=TRUE)"
  cat("ProcPlayers (v2.0) output for PP run...\n")
  cat(sprintf("data file is: %s\n", dFile))
  cat(sprintf("data set has %d variables and %d rows.\n", dim(ds)[2],dim(ds)[1]))
  cat(sprintf("Lag = %d\n",LAG))
  cat("\n\n\n")
 
- invisible( dsz[1:dim(dsz)[2]] <- lapply(dsz[1:dim(dsz)[2]], tConvert) )  # convert to T-stat each of remaining columns
- head(dsz)																  # echo head of data to out file
+ invisible( dsz[1:dim(dsz)[2]] <- lapply(dsz[1:dim(dsz)[2]], tConvert) )  	# convert to T-stat each of remaining columns
+ head(dsz)									# echo head of data to out file
  
  
  #################
