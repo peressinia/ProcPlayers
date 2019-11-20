@@ -6,8 +6,8 @@
 # 		Tony Peressini										                                                                #
 # 		November 15, 2019									                                                                #
 #													                                                                              #
-#	Function: To process player GSR sync data from Guastello lab ...				#
-#				- utilizing revised nonlinear model from 2019 NSF Proposal   		#
+#	Function: To process player GSR sync data from Guastello lab ...				                              #
+#				- utilizing revised nonlinear model from 2019 NSF Proposal   		                                #
 #													#
 #													#
 #													#
@@ -150,7 +150,7 @@ PLEVEL <- 0.05                  # p level for Delta coef
 	 theFit$control[1]<-rSq								# store r-squared in theFit$control for printing convenience in nlmOut
 	 if (rSq<0.0) rSq<-0.0								# Make R^2 zero if it is less than zero for Sync matrix
 
-   nlPivotR2=rSq
+   nlPivotR2=rSq                        # Save autoRegression for h (aitch) calculations
 
  	 pList[[i]]$NonLinearAuto["rsq"]<-rSq
   	 pList[[i]]$NonLinearAuto["B"]<-coef(theFit)["beta"]
@@ -224,33 +224,25 @@ PLEVEL <- 0.05                  # p level for Delta coef
 
 
 
-
-      ded=ts.intersect(pI=ts(dsz[i]), pIl=lag( ts(dsz[i]) ,-LAG), pJl=lag( ts(dsz[j]) ,-LAG) )
-      theFit<-lm( pI ~ (pIl*pJl) + (pIl^2+pJl), na.action=na.exclude )
-			rSq<-summary(theFit)["r.squared"]
-#cat(class(rSq))
-#cat(str(rSq))
+#      ded=ts.intersect(pI=ts(dsz[i]), pIl=lag( ts(dsz[i]) ,-LAG), pJl=lag( ts(dsz[j]) ,-LAG) )
+    #pI<-dsz[[i]]
+    #pIl<- c(rep(NA,times=LAG),dsz[[i]][1:(length(dsz[[i]])-LAG)])
+    #pJl<-c(rep(NA,times=LAG),dsz[[j]][1:(length(dsz[[j]])-LAG)])
+    #X1<-pIl*pJl
+    #X2<-pIl*pIl*pJl
+    #ded=ts.intersect(pI, X1, X2)
+    ded=ts.intersect( pI=ts(dsz[i]), X1=lag(ts(dsz[i]),-LAG)*lag(ts(dsz[j]),-LAG), X2=lag(ts(dsz[i]),-LAG)*lag(ts(dsz[i]),-LAG)*lag(ts(dsz[j])) )
+      theFit<-lm( pI ~ X1 + X2, data=ded, na.action=na.exclude )
+			rSq<-summary(theFit)[["r.squared"]]
 		 	theFit$control[1]<-rSq								# store r-squared in theFit$control for printing convenience in nlmOut
-#cat("testing value: ")
-cat(sqrt(rSq$r.squared))
-      # Not sure what this line should be - no delta in this regression..
-
-			# begin new
-#cat(class(nlPivotR2))
-# cat(class(aitch))
-      aitch<-sqrt(abs(rSq$r.squared - nlPivotR2))
-#aitch=.41
-      #sqrt( abs(rSq-pList[[i]]$NonLinearAuto["rsq"]) )          # h = sqrt( this r^2 - auto corr r^2 of this row[i] )
+      aitch<-sqrt(abs(rSq - nlPivotR2))
 			pList[[i]]$NonLinearSync2[[j]]["rsq"]<-rSq
-			# end new
-
 			#	if (summary(theFit)[["coefficients"]]["delt","Pr(>|t|)"]<PLEVEL) syncMatrixNL2[j,i]<-coef(theFit)["delt"] else syncMatrixNL2[j,i]<-0.0
 			syncMatrixNL2[j,i]<-aitch
-
 			pList[[i]]$NonLinearSync2[[j]]["B"]<-coef(theFit)["pIl"]
 		 	pList[[i]]$NonLinearSync2[[j]]["D"]<-coef(theFit)["pJl"]			# it gets 0.0 if insignificant
 
-			writeLines(nlmOut(theFit))
+      stargazer(theFit, type = "text")
 			cat("----------------------------------------------------\n\n")
 
 
@@ -367,7 +359,7 @@ cat(sqrt(rSq$r.squared))
  	 for (j in xSet ) {	cat(sprintf("     D = %8.6f",pList[[i]]$NonLinearSync1[[j]]["D"]))	}
  	 cat("\n\n")
 
- 	 cat(sprintf("Model:  p1*x1*(1−x1)\n"))
+ 	 cat(sprintf("Model:  p1*z1*(1−z1) = b1*(p1*z1) + b2*(p1+z1^2)\n"))
  	 cat(sprintf("%16s",colHead),"\n")
  	 for (j in xSet ) {	cat(sprintf("   R^2 = %8.6f",pList[[i]]$NonLinearSync2[[j]]["rsq"])) }
  	 cat("\n")
