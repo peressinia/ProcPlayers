@@ -6,7 +6,7 @@
 # 		Tony Peressini										                                                                #
 # 		November 15, 2019									                                                                #
 #													                                                                              #
-#	Function: To process player GSR sync data from Guastello lab ...				#
+#	Function: To process player GSR sync data from Guastello lab ...				                              #
 #				- utilizing revised nonlinear model from 2019 NSF Proposal   		#
 #													#
 #													#
