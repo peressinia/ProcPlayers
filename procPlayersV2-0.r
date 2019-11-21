@@ -128,9 +128,9 @@ PLEVEL <- 0.05                  # p level for Delta coef
  # do calculations
  #################
   for (i in 1:N ) {
-	 cat(sprintf("==================================================\n"))
-	 cat(sprintf("Analyzing Player %d as independent variable (I=%d)\n", i,i))
- 	 cat(sprintf("==================================================\n"))
+	 cat(sprintf("=====================================================================|\n"))
+	 cat(sprintf("          Analyzing Player %d as independent variable (I=%d)\n", i,i))
+ 	 cat(sprintf("=====================================================================|\n"))
 
 	 #  Linear Autoregression
 	 cat(sprintf("... Player %d LINEAR autocorrelation (I=%d)\n", i,i))
@@ -139,7 +139,7 @@ PLEVEL <- 0.05                  # p level for Delta coef
 	 pList[[i]]$LinearAutoCorr["rsq"]<-summary(theFit)$r.squared
 	 syncMatrixL[i,i]<-sqrt(summary(theFit)$r.squared)
 	 stargazer(theFit, type = "text")
-	 cat("----------------------------------------------------\n\n")
+	 cat("---------------------------------------------------------------------|\n\n")
 
 	 #  nonLinear autoRegression Pi on lag(Pi)
 	 cat(sprintf("... Player %d NONLINEAR autocorrelation (I=%d)\n", i,i))
@@ -147,18 +147,18 @@ PLEVEL <- 0.05                  # p level for Delta coef
 	 pIl<- c(rep(NA,times=LAG),dsz[[i]][1:(length(dsz[[i]])-LAG)])
 	 theFit <- nlsLM(pI ~ alpha*exp(beta * pIl), start=c(alpha=0.5,beta=0.5), na.action = na.exclude )
 	 rSq <- 1-(deviance(theFit)/sum((pI-mean(pI))^2))   # R^2 = 1 - [ (Residual Sum of Squares / Corrected Sum of Squares) ]
-	 theFit$control[1]<-rSq								# store r-squared in theFit$control for printing convenience in nlmOut
-	 if (rSq<0.0) rSq<-0.0								# Make R^2 zero if it is less than zero for Sync matrix
+ 	 pList[[i]]$NonLinearAuto["rsq"]<-rSq
+   pList[[i]]$NonLinearAuto["B"]<-coef(theFit)["beta"]
+   theFit$control[1]<-rSq								# store r-squared in theFit$control for printing convenience in nlmOut
 
+   if (rSq<0.0) rSq<-0.0								# Make R^2 zero if it is less than zero for Sync matrix
    nlPivotR2=rSq                        # Save autoRegression for h (aitch) calculations
 
- 	 pList[[i]]$NonLinearAuto["rsq"]<-rSq
-  	 pList[[i]]$NonLinearAuto["B"]<-coef(theFit)["beta"]
-	 syncMatrixNL1[i,i]<-sqrt(rSq)
+   syncMatrixNL1[i,i]<-sqrt(rSq)
 	 syncMatrixNL2[i,i]<-sqrt(rSq)
 	 syncMatrixNL3[i,i]<-sqrt(rSq)
 	 writeLines(nlmOut(theFit))
-	 cat("----------------------------------------------------\n\n")
+	 cat("---------------------------------------------------------------------|\n\n")
 
 	 for (j in 1:N ) {
 
@@ -173,7 +173,7 @@ PLEVEL <- 0.05                  # p level for Delta coef
 		 	pList[[i]]$LinearSync[[j]]["b2"]<-coef(theFit)["pJl"]
 			syncMatrixL[j,i]<-coef(theFit)["pJl"]
 			stargazer(theFit, type = "text")
-			cat("----------------------------------------------------\n\n")
+			cat("---------------------------------------------------------------------|\n\n")
 
       #
 			#  Opt 1: nonLinear Regression Pi on lag(Pi) + lag(Pj):  z_2 = Ae^{Bz_1} model with H
@@ -186,13 +186,15 @@ PLEVEL <- 0.05                  # p level for Delta coef
 		 	rSq <- 1-(deviance(theFit)/sum((pI-mean(pI))^2))   	# R^2 = 1 - [ (Residual Sum of Squares / Corrected Sum of Squares) ]
 		 	theFit$control[1]<-rSq								# store r-squared in theFit$control for printing convenience in nlmOut
 			#if (summary(theFit)[["coefficients"]]["delt","Pr(>|t|)"]<PLEVEL) syncMatrixNL1[j,i]<-coef(theFit)["delt"] else syncMatrixNL1[j,i]<-0.0
-			aitch<-sqrt( abs(rSq-pList[[i]]$NonLinearAuto["rsq"]) )          # h = sqrt( this r^2 - auto corr r^2 of this row[i] )
+			aitch<-sqrt( abs(rSq-nlPivotR2) )          # h = sqrt( this r^2 - auto corr r^2 of this row[i] NOTE: set to 0 if <0 )
       syncMatrixNL1[j,i]<-aitch
       pList[[i]]$NonLinearSync1[[j]]["rsq"]<-rSq
 		 	pList[[i]]$NonLinearSync1[[j]]["B"]<-coef(theFit)["beta"]
 		 	pList[[i]]$NonLinearSync1[[j]]["D"]<-coef(theFit)["delt"]		# it gets 0.0 if insignificant
 			writeLines(nlmOut(theFit))
-			cat("----------------------------------------------------\n\n")
+      cat(sprintf("h^2 = (R^2 model - R^2 NLAC) = (%6.4f - %6.4f) = %6.4f\n",rSq,nlPivotR2,aitch^2))
+      cat(sprintf("h = %6.4f\n",aitch))
+			cat("---------------------------------------------------------------------|\n\n")
 
 
       #
@@ -201,8 +203,6 @@ PLEVEL <- 0.05                  # p level for Delta coef
 		  cat(sprintf("... Player %d NONLINEAR regression Opt 2 on Player %d (I=%d, J=%d)\n", i,j,i,j))
       #
 
-
-
     #ded=ts.intersect(pI=ts(dsz[i]), pIl=lag( ts(dsz[i]) ,-LAG), pJl=lag( ts(dsz[j]) ,-LAG) )
     #pI<-dsz[[i]]
     #pIl<- c(rep(NA,times=LAG),dsz[[i]][1:(length(dsz[[i]])-LAG)])
@@ -210,7 +210,6 @@ PLEVEL <- 0.05                  # p level for Delta coef
     #X1<-pIl*pJl
     #X2<-pIl*pIl*pJl
     #ded=ts.intersect(pI, X1, X2)
-
     #ded=ts.intersect(pI=ts(dsz[i]), X1=lag( ts(dsz[i]) ,-LAG), X2=lag( ts(dsz[j]) ,-LAG) )
 
       pIl<- c(rep(NA,times=LAG),dsz[[i]][1:(length(dsz[[i]])-LAG)])
@@ -222,14 +221,19 @@ PLEVEL <- 0.05                  # p level for Delta coef
       theFit<-lm( pI ~ X1 + X2, data=ded, na.action=na.exclude)
 			rSq<-summary(theFit)[["r.squared"]]
 		 	theFit$control[1]<-rSq								# store r-squared in theFit$control for printing convenience in nlmOut
-      aitch<-sqrt(abs(rSq - nlPivotR2))
+      aitch<-sqrt(abs(rSq - nlPivotR2))     # h = sqrt( this r^2 - auto corr r^2 of this row[i] NOTE: set to 0 if <0 )
 			pList[[i]]$NonLinearSync2[[j]]["rsq"]<-rSq
 			#	if (summary(theFit)[["coefficients"]]["delt","Pr(>|t|)"]<PLEVEL) syncMatrixNL2[j,i]<-coef(theFit)["delt"] else syncMatrixNL2[j,i]<-0.0
 			syncMatrixNL2[j,i]<-aitch
 			pList[[i]]$NonLinearSync2[[j]]["B"]<-coef(theFit)["X1"]
 		 	pList[[i]]$NonLinearSync2[[j]]["D"]<-coef(theFit)["X2"]			# it gets 0.0 if insignificant
+	    cat("---------------------------------------------------------------\n")
+      cat("Formula:  pI ~ b1*X1 + b2*X2, where X1=pIl*pJl and X2=pIl^2*pJl\n")
+  	  cat("---------------------------------------------------------------\n")
       stargazer(theFit, type = "text")
-			cat("----------------------------------------------------\n\n")
+      cat(sprintf("h^2 = (R^2 model - R^2 NLAC) = (%6.4f - %6.4f) = %6.4f\n",rSq,nlPivotR2,aitch^2))
+      cat(sprintf("h = %6.4f\n",aitch))
+			cat("---------------------------------------------------------------------|\n\n")
 
 
       #
@@ -244,14 +248,16 @@ PLEVEL <- 0.05                  # p level for Delta coef
 		 	theFit$control[1]<-rSq								# store r-squared in theFit$control for printing convenience in nlmOut
 
 		 	#
-			aitch<-sqrt( abs(rSq-pList[[i]]$NonLinearAuto["rsq"]) )          # h = sqrt( this r^2 - auto corr r^2 of this row[i] )
+			aitch<-sqrt( abs(rSq-nlPivotR2) )          # h = sqrt( this r^2 - auto corr r^2 of this row[i] NOTE: set to 0 if <0 )
       # if (summary(theFit)[["coefficients"]]["alpha","Pr(>|t|)"]<PLEVEL) syncMatrixNL3[j,i]<-coef(theFit)["alpha"] else syncMatrixNL3[j,i]<-0.0
       syncMatrixNL3[j,i]<-aitch
       pList[[i]]$NonLinearSync3[[j]]["rsq"]<-rSq
 		 	pList[[i]]$NonLinearSync3[[j]]["B"]<-coef(theFit)["beta"]
 		 	pList[[i]]$NonLinearSync3[[j]]["D"]<-coef(theFit)["alpha"]			# it gets 0.0 if insignificant
 			writeLines(nlmOut(theFit))
-			cat("----------------------------------------------------\n\n")
+      cat(sprintf("h^2 = (R^2 model - R^2 NLAC) = (%6.4f - %6.4f) = %6.4f\n",rSq,nlPivotR2,aitch^2))
+      cat(sprintf("h = %6.4f\n",aitch))
+			cat("---------------------------------------------------------------------|\n\n")
 
 		 }
 	 }
@@ -321,7 +327,7 @@ PLEVEL <- 0.05                  # p level for Delta coef
  	 cat(sprintf("--------------------------------------------------\n"))
  	 cat(sprintf("         Player %d Results Summary\n",i))
   	 cat(sprintf("---------------------------------------------------\n"))
- 	 cat(sprintf("Bivariate Auto\n"))
+ 	 cat(sprintf("Linear Auto\n"))
  	 cat(sprintf("   r^2 = %9.6f\n\n",pList[[i]]$LinearAutoCorr["rsq"]))
 
  	 cat(sprintf("Linear Sync\n"))
