@@ -1,41 +1,44 @@
-#########################################################################################################
-#                                                                                                       #
-# 	R Script: procPlayers                                                                               #
-#													                                                                              #
-# 		version 2.0 										                                                                  #
-# 		Tony Peressini										                                                                #
-# 		November 15, 2019									                                                                #
-#													                                                                              #
-#	Function: To process player GSR sync data from Guastello lab ...				                              #
-#				- utilizing revised nonlinear model from 2019 NSF Proposal   		                                #
-#													#
-#													#
-#													#
-#													#
-#													#
-#	Input:  User chosen CSV file with time as first column (discarded) and				#
-#			monster data as final column (discarded)					#
-#													#
-#	Output:	Four files named the original filename appended with following				#
-#		(1) -out.txt,   which contains raw output of analyses for debugging/verification		#
-#		(2) -lMat.txt,  which contains the linear sync matrix for use with SyncCalc		#
-#		(3) -nlMat.txt, which contains the nonlinear sync matrix for use with SyncCalc		#
-#		(4) -sum.txt,   which contains a summary of the results of the analysis			#
-#													#
-#													#
-#	New in version 1.1: 	check for significance of Delta in nlsLM at PLEVEL <- 0.05 for i!=j	#
-#				check for negative R^2 in nlsLM	for i=j					#
-#													#
-#	Version 2.0 employs a different nonlinear model(s) from the Sec. 3.1, p. 6-7 from 2019 		#
-#		NSF proposal description.  We use Eq. 7, [SQRT (differences in R2)] as the matrix	#
-#		entries.										#
-#													#
-#													#
-#													#
-#													#
-#													#
-#########################################################################################################
-
+################################################################################
+#
+# NAME: -procPlayers-
+#
+# R code for processing GSR time series data for use with SyncCalc (see
+#   https://academic.mu.edu/peressini/synccalc/synccalc.htm)
+#
+#  		version 2.0
+#  		Tony Peressini & Stephen Guastello
+#  		November 15, 2019
+#
+# 	Function: To process player GSR sync data from Guastello lab ... (ver 1.0-1.1)
+# 				- utilizing revised nonlinear model from 2019 NSF Proposal (ver 2.0-)
+#
+#   Input:  User chosen CSV file with time as first column (discarded) and
+# 			    monster data as final column (discarded)
+#
+# 	Output:	Six files named the original filename appended with following
+# 		(1) -out.txt,   raw output of analyses for debugging/verification
+# 		(2) -lMat.txt,  the linear sync matrix for use with SyncCalc
+# 		(3) -nl1Mat.txt, the Opt 1 nonlinear sync matrix for use with SyncCalc
+#     (4)	-nl2Mat.txt, the Opt 2 nonlinear sync matrix for use with SyncCalc
+#     (5) -nl3Mat.txt, the Opt 3 nonlinear sync matrix for use with SyncCalc
+# 		(6) -sum.txt,   which contains a summary of the results of the analysis
+#
+#     Version 2.0 employs different nonlinear model(s); see Sec. 3.1, p. 6-7
+#     from Peressini & Guastello (2019) NSF proposal description.
+#
+#     The three nonlinear model options are:
+#       Option 1:   z_2 = A*e^{B*z_1} + e^{D*p_1}
+#       Option 2:   z_2 = A*p_1*z_1*(1−z_1)
+#       Option 3:   z_2 = A*p_1e^{Bz_1}
+#
+#       The non-linear matrices are generated with the nonlinear auto-
+#       correlation's (z_2 = A*e^{Bz_1}) R (square root of R^2) on the diagonals
+#       (a[i,i]) and with the off-diagonals, a[i,j], i<>j, populated with:
+#             h[i,j] = sqrt[ |R'^2 - R^2| ],
+#       where R'^2 is R^2 for model (Option 1, 2, or 3), and R^2 is R^2 for the
+#       nonlinear autocorrelation (square of element on diagonal).
+#
+################################################################################
 
 # ######################
 # Library Packages Used
@@ -176,7 +179,7 @@ PLEVEL <- 0.05                  # p level for Delta coef
 			cat("---------------------------------------------------------------------|\n\n")
 
       #
-			#  Opt 1: nonLinear Regression Pi on lag(Pi) + lag(Pj):  z_2 = Ae^{Bz_1} model with H
+			#  Opt 1: nonLinear Regression Pi on lag(Pi) + lag(Pj):  z_2 = A*e^{B*z_1} + e^{D*p_1}
 			#
 			cat(sprintf("... Player %d NONLINEAR regression Opt 1 on Player %d (I=%d, J=%d)\n", i,j,i,j))
 			pI<-dsz[[i]]
@@ -283,7 +286,7 @@ PLEVEL <- 0.05                  # p level for Delta coef
    # write nonlinear sync matrix - 1st based on  z_2 = Ae^{Bz_1} model with H
    #################
    sink(paste(thePath, nlMatrixFileName1,sep="/"),split=FALSE)
-   cat(outName,"nonLinear Sync Matrix - Opt 1","\n")
+   cat(outName,"nonLinear Sync Matrix - Opt 1: A*e^{B*z_1} + e^{D*p_1}","\n")
    cat(N)
    prmatrix(syncMatrixNL1, rowlab=rep("",N), collab=rep("",N))
    sink()
@@ -343,7 +346,7 @@ PLEVEL <- 0.05                  # p level for Delta coef
  	 cat(sprintf("   r^2 = %9.6f\n",pList[[i]]$NonLinearAuto["rsq"]))
  	 cat(sprintf("     B = %9.6f\n\n",pList[[i]]$NonLinearAuto["B"]))
 
- 	 cat(sprintf("Model:  A*e^(B*z1) + e^(D*p1)\n"))
+ 	 cat(sprintf("Model:  A*e^(B*z1) + e^(D*p1) [Option 1]\n"))
  	 cat(sprintf("%16s",colHead),"\n")
  	 for (j in xSet ) {	cat(sprintf("   R^2 = %8.6f",pList[[i]]$NonLinearSync1[[j]]["rsq"])) }
  	 cat("\n")
@@ -352,7 +355,7 @@ PLEVEL <- 0.05                  # p level for Delta coef
  	 for (j in xSet ) {	cat(sprintf("     D = %8.6f",pList[[i]]$NonLinearSync1[[j]]["D"]))	}
  	 cat("\n\n")
 
- 	 cat(sprintf("Model:  p1*z1*(1−z1) = b1*(p1*z1) + b2*(p1+z1^2)\n"))
+ 	 cat(sprintf("Model:  p1*z1*(1−z1) = b1*(p1*z1) + b2*(p1+z1^2) [Option 2]\n"))
  	 cat(sprintf("%16s",colHead),"\n")
  	 for (j in xSet ) {	cat(sprintf("   R^2 = %8.6f",pList[[i]]$NonLinearSync2[[j]]["rsq"])) }
  	 cat("\n")
@@ -361,7 +364,7 @@ PLEVEL <- 0.05                  # p level for Delta coef
  	 for (j in xSet ) {	cat(sprintf("     b2 = %8.6f",pList[[i]]$NonLinearSync2[[j]]["D"]))	}
  	 cat("\n\n")
 
- 	 cat(sprintf("Model:  A*p1*e^(B*z1)\n"))
+ 	 cat(sprintf("Model:  A*p1*e^(B*z1) [Option 3]\n"))
  	 cat(sprintf("%16s",colHead),"\n")
  	 for (j in xSet ) {	cat(sprintf("   R^2 = %8.6f",pList[[i]]$NonLinearSync3[[j]]["rsq"])) }
  	 cat("\n")
