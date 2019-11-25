@@ -1,6 +1,6 @@
 # ProcPlayer
 
-R code for processing GSR time series data for use with SyncCalc (see <https://academic.mu.edu/peressini/synccalc/synccalc.htm>). 
+R code for processing GSR time series data for use with SyncCalc (see <https://academic.mu.edu/peressini/synccalc/synccalc.htm>).
 
 **Input:**  User chosen CSV file with time as first column (discarded), player GSR timeseries as next columns, and monster/control data as final column (discarded).
 
@@ -16,20 +16,20 @@ R code for processing GSR time series data for use with SyncCalc (see <https://a
 
 The three nonlinear model options are:
 
-> Option 1:	z<sub>2</sub> = A・e<sup>B・z<sub>1</sup> + e<sup>D・p<sub>1</sub></sup>.  
-> Option 2:	z<sub>2</sub> = A・p<sub>1</sub>・z<sub>1</sub>・(1−z<sub>1</sub>).  
-> Option 3:	z<sub>2</sub> = A・p<sub>1</sub>・e<sup>B・z<sub>1</sub></sup>.  
+> Option 1:	z<sub>2</sub> = &alpha;・e<sup>&beta;・z<sub>1</sup> + e<sup>&delta;・p<sub>1</sub></sup>.  
+> Option 2:	z<sub>2</sub> = &alpha;・p<sub>1</sub>・z<sub>1</sub>・(1−z<sub>1</sub>).  
+> Option 3:	z<sub>2</sub> = &alpha;・p<sub>1</sub>・e<sup>&beta;・z<sub>1</sub></sup>.  
 
-The non-linear matrices are generated with the nonlinear autocorrelation's (z<sub>2</sub> = A・e<sup>B・z<sub>1</sub></sup>) R (square root of R<sup>2</sup>) on the diagonals (a[i,i]) and with the off-diagonals, a[i,j], i<>j, populated with:
+The non-linear matrices are generated with the nonlinear autocorrelation's (z<sub>2</sub> = A・e<sup>&beta;・z<sub>1</sub></sup>) R (square root of R<sup>2</sup>) on the diagonals (a[i,i]) and with the off-diagonals, a[i,j], i<>j, populated with:
 
 > h<sub>i,j</sub> = &radic;|R'<sup>2</sup> - R<sup>2</sup>|,
-						 
+
 where R'<sup>2</sup> is R<sup>2</sup> for the particular model (Option 1, 2, or 3) of player i's influence on player j, and R<sup>2</sup> is R<sup>2</sup> for the nonlinear autocorrelation (square of element on diagonal).
 
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. 
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
 ### Prerequisites
 
@@ -52,7 +52,7 @@ Version 2.0 employs different nonlinear model(s); see Sec. 3.1, p. 6-7 from Pere
 ## Authors
 
 * **Anthony F. Peressini** - <https://github.com/peressinia>
-* **Stephen J. Guastello** 
+* **Stephen J. Guastello**
 
 
 
@@ -65,4 +65,3 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 * Hat tip to anyone we should
 * Inspiration
 * etc
-
