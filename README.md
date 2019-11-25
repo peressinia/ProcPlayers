@@ -16,15 +16,15 @@ R code for processing GSR time series data for use with SyncCalc (see <https://a
 
 The three nonlinear model options are:
 
-> Option 1:	z2 = A・e^{B・z1} + e^{D・p1}.  
-> Option 2:	z2 = A・p1・z1・(1−z1).  
-> Option 3:	z2 = A・p1・e^{B・z1}.  
+> Option 1:	z<sub>2</sub> = A・e<sup>B・z<sub>1</sup> + e<sup>D・p<sub>1</sub></sup>.  
+> Option 2:	z<sub>2</sub> = A・p<sub>1</sub>・z<sub>1</sub>・(1−z<sub>1</sub>).  
+> Option 3:	z<sub>2</sub> = A・p<sub>1</sub>・e<sup>B・z<sub>1</sub></sup>.  
 
-The non-linear matrices are generated with the nonlinear autocorrelation's (z2 = A*e^{B*z1}) R (square root of R^2) on the diagonals (a[i,i]) and with the off-diagonals, a[i,j], i<>j, populated with:
+The non-linear matrices are generated with the nonlinear autocorrelation's (z<sub>2</sub> = A e<sup>B z1</sup>) R (square root of R<sup>2</sup>) on the diagonals (a[i,i]) and with the off-diagonals, a[i,j], i<>j, populated with:
 
-> h[i,j] = sqrt[ |R'^2 - R^2| ],
+> h<sub>i,j</sub> = &radic;|R'<sup>2</sup> - R<sup>2</sup>|,
 						 
-where R'^2 is R^2 for the particular model (Option 1, 2, or 3), and R^2 is R^2 for the nonlinear autocorrelation (square of element on diagonal).
+where R'<sup>2</sup> is R<sup>2</sup> for the particular model (Option 1, 2, or 3) of player i's influence on player j, and R<sup>2</sup> is R<sup>2</sup> for the nonlinear autocorrelation (square of element on diagonal).
 
 
 ## Getting Started
