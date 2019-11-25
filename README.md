@@ -4,7 +4,7 @@ R code for processing GSR time series data for use with SyncCalc (see <https://a
 
 **Input:**  User chosen CSV file with time as first column (discarded), player GSR timeseries as next columns, and monster/control data as final column (discarded).
 
-**Output:**  Six files with the CVS data file name appended as follows:
+**Output:**  Six files whose names are the same as the input file's name appended as follows:
 
 > 1.	-out.txt, raw output of analyses for debugging/verification
 > 2. 	-lMat.txt, the linear sync matrix for use with SyncCalc
