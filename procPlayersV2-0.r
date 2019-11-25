@@ -179,7 +179,7 @@ PLEVEL <- 0.05                  # p level for Delta coef
 			cat("---------------------------------------------------------------------|\n\n")
 
       #
-			#  Opt 1: nonLinear Regression Pi on lag(Pi) + lag(Pj):  z_2 = A*e^{B*z_1} + e^{D*p_1}
+			#  Opt 1: nonLinear Regression:  z_2 = A*e^{B*z_1} + e^{D*p_1}
 			#
 			cat(sprintf("... Player %d NONLINEAR regression Opt 1 on Player %d (I=%d, J=%d)\n", i,j,i,j))
 			pI<-dsz[[i]]
@@ -188,8 +188,10 @@ PLEVEL <- 0.05                  # p level for Delta coef
 			theFit <- nlsLM(pI ~ alpha*exp(beta * pIl) + exp(delt * pJl), start=c(alpha=0.5,beta=0.5,delt=0.5), na.action = na.exclude )
 		 	rSq <- 1-(deviance(theFit)/sum((pI-mean(pI))^2))   	# R^2 = 1 - [ (Residual Sum of Squares / Corrected Sum of Squares) ]
 		 	theFit$control[1]<-rSq								# store r-squared in theFit$control for printing convenience in nlmOut
-			#if (summary(theFit)[["coefficients"]]["delt","Pr(>|t|)"]<PLEVEL) syncMatrixNL1[j,i]<-coef(theFit)["delt"] else syncMatrixNL1[j,i]<-0.0
-			aitch<-sqrt( abs(rSq-nlPivotR2) )          # h = sqrt( this r^2 - auto corr r^2 of this row[i] NOTE: set to 0 if <0 )
+
+    	#if (summary(theFit)[["coefficients"]]["delt","Pr(>|t|)"]<PLEVEL) syncMatrixNL1[j,i]<-coef(theFit)["delt"] else syncMatrixNL1[j,i]<-0.0
+
+    	aitch<-sqrt( abs(rSq-nlPivotR2) )          # h = sqrt( this r^2 - auto corr r^2 of this row[i] NOTE: set to 0 if <0 )
       syncMatrixNL1[j,i]<-aitch
       pList[[i]]$NonLinearSync1[[j]]["rsq"]<-rSq
 		 	pList[[i]]$NonLinearSync1[[j]]["B"]<-coef(theFit)["beta"]
@@ -201,32 +203,22 @@ PLEVEL <- 0.05                  # p level for Delta coef
 
 
       #
-			#  Opt 2: nonLinear Regression Pi on lag(Pi) + lag(Pj):  X_2 =P_1X_1(1−X_1) with H
+			#  Opt 2: nonLinear Regression:  X_2 =P_1*X_1*(1−X_1)
 			#
 		  cat(sprintf("... Player %d NONLINEAR regression Opt 2 on Player %d (I=%d, J=%d)\n", i,j,i,j))
-      #
-
-    #ded=ts.intersect(pI=ts(dsz[i]), pIl=lag( ts(dsz[i]) ,-LAG), pJl=lag( ts(dsz[j]) ,-LAG) )
-    #pI<-dsz[[i]]
-    #pIl<- c(rep(NA,times=LAG),dsz[[i]][1:(length(dsz[[i]])-LAG)])
-    #pJl<-c(rep(NA,times=LAG),dsz[[j]][1:(length(dsz[[j]])-LAG)])
-    #X1<-pIl*pJl
-    #X2<-pIl*pIl*pJl
-    #ded=ts.intersect(pI, X1, X2)
-    #ded=ts.intersect(pI=ts(dsz[i]), X1=lag( ts(dsz[i]) ,-LAG), X2=lag( ts(dsz[j]) ,-LAG) )
-
       pIl<- c(rep(NA,times=LAG),dsz[[i]][1:(length(dsz[[i]])-LAG)])
       pJl<-c(rep(NA,times=LAG),dsz[[j]][1:(length(dsz[[j]])-LAG)])
       X1<-pIl*pJl
       X2<-pIl*pIl*pJl
       ded=ts.intersect( pI=ts(dsz[i]), X1, X2 )
-      #ded=ts.intersect( pI=ts(dsz[i]), X1=lag(ts(dsz[i]),-LAG)*lag(ts(dsz[j]),-LAG), X2=lag(ts(dsz[i]),-LAG)*lag(ts(dsz[i]),-LAG)*lag(ts(dsz[j])) )
       theFit<-lm( pI ~ X1 + X2, data=ded, na.action=na.exclude)
 			rSq<-summary(theFit)[["r.squared"]]
 		 	theFit$control[1]<-rSq								# store r-squared in theFit$control for printing convenience in nlmOut
       aitch<-sqrt(abs(rSq - nlPivotR2))     # h = sqrt( this r^2 - auto corr r^2 of this row[i] NOTE: set to 0 if <0 )
 			pList[[i]]$NonLinearSync2[[j]]["rsq"]<-rSq
+
 			#	if (summary(theFit)[["coefficients"]]["delt","Pr(>|t|)"]<PLEVEL) syncMatrixNL2[j,i]<-coef(theFit)["delt"] else syncMatrixNL2[j,i]<-0.0
+
 			syncMatrixNL2[j,i]<-aitch
 			pList[[i]]$NonLinearSync2[[j]]["B"]<-coef(theFit)["X1"]
 		 	pList[[i]]$NonLinearSync2[[j]]["D"]<-coef(theFit)["X2"]			# it gets 0.0 if insignificant
@@ -240,7 +232,7 @@ PLEVEL <- 0.05                  # p level for Delta coef
 
 
       #
-			#  Opt 3: nonLinear Regression Pi on lag(Pi) + lag(Pj):  z_2 = AP_1e^{Bz_1} model with H
+			#  Opt 3: nonLinear Regression:  z_2 = AP_1e^{Bz_1}
 			#
 			cat(sprintf("... Player %d NONLINEAR regression Opt 3 on Player %d (I=%d, J=%d)\n", i,j,i,j))
 			pI<-dsz[[i]]
@@ -249,10 +241,10 @@ PLEVEL <- 0.05                  # p level for Delta coef
 			theFit <- nlsLM(pI ~ alpha*pJl*exp(beta * pIl), start=c(alpha=0.5,beta=0.5), na.action = na.exclude )
 		 	rSq <- 1-(deviance(theFit)/sum((pI-mean(pI))^2))   	# R^2 = 1 - [ (Residual Sum of Squares / Corrected Sum of Squares) ]
 		 	theFit$control[1]<-rSq								# store r-squared in theFit$control for printing convenience in nlmOut
-
-		 	#
 			aitch<-sqrt( abs(rSq-nlPivotR2) )          # h = sqrt( this r^2 - auto corr r^2 of this row[i] NOTE: set to 0 if <0 )
+
       # if (summary(theFit)[["coefficients"]]["alpha","Pr(>|t|)"]<PLEVEL) syncMatrixNL3[j,i]<-coef(theFit)["alpha"] else syncMatrixNL3[j,i]<-0.0
+
       syncMatrixNL3[j,i]<-aitch
       pList[[i]]$NonLinearSync3[[j]]["rsq"]<-rSq
 		 	pList[[i]]$NonLinearSync3[[j]]["B"]<-coef(theFit)["beta"]
