@@ -18,7 +18,7 @@ The three nonlinear model options are:
 
 > Option 1:	z<sub>2</sub> = &alpha;・e<sup>&beta;・z<sub>1</sup> + e<sup>&delta;・p<sub>1</sub></sup>.  
 > Option 2:	z<sub>2</sub> = &alpha;・p<sub>1</sub>・z<sub>1</sub>・(1−z<sub>1</sub>).  
-  > Option 3:	z<sub>2</sub> = &alpha;・p<sub>1</sub>・z<sub>1</sub></sup>・e<sup>&beta;・z<sub>1</sub></sup> + C.  
+  > Option 3:	z<sub>2</sub> = &alpha;・p<sub>1</sub>・z<sub>1</sub></sup>・e<sup>&beta;・z<sub>1</sub></sup> + &gamma;.  
 
 The non-linear matrices are generated with the nonlinear autocorrelation's (z<sub>2</sub> = A・e<sup>&beta;・z<sub>1</sub></sup>) R (square root of R<sup>2</sup>) on the diagonals (a[i,i]) and with the off-diagonals, a[i,j], i<>j, populated with:
 
