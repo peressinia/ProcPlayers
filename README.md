@@ -16,11 +16,11 @@ R code for processing GSR time series data for use with SyncCalc (see <https://a
 
 The three nonlinear model options are:
 
-> Option 1:	z<sub>2</sub> = &alpha;・e<sup>&beta;・z<sub>1</sup> + e<sup>&delta;・p<sub>1</sub></sup>.  
-> Option 2:	z<sub>2</sub> = &alpha;・p<sub>1</sub>・z<sub>1</sub>・(1−z<sub>1</sub>).  
-  > Option 3:	z<sub>2</sub> = &alpha;・p<sub>1</sub>・z<sub>1</sub></sup>・e<sup>&beta;・z<sub>1</sub></sup> + &gamma;.  
+> Option 1:	z<sub>2</sub> = A・e<sup>B・z<sub>1</sup> + e<sup>D・p<sub>1</sub></sup>.  
+> Option 2:	z<sub>2</sub> = A・p<sub>1</sub>・z<sub>1</sub>・(1−z<sub>1</sub>).  
+  > Option 3:	z<sub>2</sub> = A・p<sub>1</sub>・z<sub>1</sub></sup>・e<sup>B・z<sub>1</sub></sup> + C.  
 
-The non-linear matrices are generated with the nonlinear autocorrelation's (z<sub>2</sub> = A・e<sup>&beta;・z<sub>1</sub></sup>) R (square root of R<sup>2</sup>) on the diagonals (a[i,i]) and with the off-diagonals, a[i,j], i<>j, populated with:
+The non-linear matrices are generated with the nonlinear autocorrelation's (z<sub>2</sub> = A・e<sup>B・z<sub>1</sub></sup>) R (square root of R<sup>2</sup>) on the diagonals (a[i,i]) and with the off-diagonals, a[i,j], i<>j, populated with:
 
 > h<sub>i,j</sub> = &radic;|R'<sup>2</sup> - R<sup>2</sup>|,
 
