@@ -29,7 +29,7 @@
 #     The three nonlinear model options are:
 #       Option 1:   z_2 = A*e^{B*z_1} + e^{D*p_1}
 #       Option 2:   z_2 = A*p_1*z_1*(1−z_1)
-#       Option 3:   z_2 = A*p_1e^{Bz_1}
+#       Option 3:   z_2 = A*p_1*z_1*e^{Bz_1} + C
 #
 #       The non-linear matrices are generated with the nonlinear auto-
 #       correlation's (z_2 = A*e^{Bz_1}) R (square root of R^2) on the diagonals
@@ -121,10 +121,12 @@ PLEVEL <- 0.05                  # p level for Delta coef
  #################
  lAC<-c(rsq=0.0)					# r^2
  lPx<-c(rsq=0.0,b1=0.0,b2=0.0)   	# r^2 b1 b2
- nlAC<-c(rsq=0.0,B=0.0)				# r^2 B
- nlPx<-c(rsq=0.0,B=0.0,D=0.0)		# r^2 B D
- BlankPlayerData <-  list(LinearAutoCorr=lAC,LinearSync=rep(list(lPx),N),NonLinearAuto=nlAC,NonLinearSync1=rep(list(nlPx),N),
- 	 						NonLinearSync2=rep(list(nlPx),N),NonLinearSync3=rep(list(nlPx),N))
+ nlAC<-c(rsq=0.0,B=0.0,A=0.0)				# r^2 B
+ nlP1<-c(rsq=0.0,B=0.0,D=0.0,A=0.0)  # r^2 B D
+ nlP2<-c(rsq=0.0,bi=0.0,qi=0.0)  # r^2 B D
+ nlP3<-c(rsq=0.0,A=0.0,B=0.0,C=0.0)
+ BlankPlayerData <-  list(LinearAutoCorr=lAC,LinearSync=rep(list(lPx),N),NonLinearAuto=nlAC,NonLinearSync1=rep(list(nlP1),N),
+ 	 						NonLinearSync2=rep(list(nlP2),N),NonLinearSync3=rep(list(nlP3),N))
  pList<- rep(list(BlankPlayerData), N)
 
  #################
@@ -152,6 +154,7 @@ PLEVEL <- 0.05                  # p level for Delta coef
 	 rSq <- 1-(deviance(theFit)/sum((pI-mean(pI))^2))   # R^2 = 1 - [ (Residual Sum of Squares / Corrected Sum of Squares) ]
  	 pList[[i]]$NonLinearAuto["rsq"]<-rSq
    pList[[i]]$NonLinearAuto["B"]<-coef(theFit)["beta"]
+   pList[[i]]$NonLinearAuto["A"]<-coef(theFit)["alpha"]
    theFit$control[1]<-rSq								# store r-squared in theFit$control for printing convenience in nlmOut
 
    if (rSq<0.0) rSq<-0.0								# Make R^2 zero if it is less than zero for Sync matrix
@@ -196,6 +199,7 @@ PLEVEL <- 0.05                  # p level for Delta coef
       pList[[i]]$NonLinearSync1[[j]]["rsq"]<-rSq
 		 	pList[[i]]$NonLinearSync1[[j]]["B"]<-coef(theFit)["beta"]
 		 	pList[[i]]$NonLinearSync1[[j]]["D"]<-coef(theFit)["delt"]		# it gets 0.0 if insignificant
+      pList[[i]]$NonLinearSync1[[j]]["A"]<-coef(theFit)["alpha"]
 			writeLines(nlmOut(theFit))
       cat(sprintf("h^2 = (R^2 model - R^2 NLAC) = (%6.4f - %6.4f) = %6.4f\n",rSq,nlPivotR2,aitch^2))
       cat(sprintf("h = %6.4f\n",aitch))
@@ -220,8 +224,8 @@ PLEVEL <- 0.05                  # p level for Delta coef
 			#	if (summary(theFit)[["coefficients"]]["delt","Pr(>|t|)"]<PLEVEL) syncMatrixNL2[j,i]<-coef(theFit)["delt"] else syncMatrixNL2[j,i]<-0.0
 
 			syncMatrixNL2[j,i]<-aitch
-			pList[[i]]$NonLinearSync2[[j]]["B"]<-coef(theFit)["X1"]
-		 	pList[[i]]$NonLinearSync2[[j]]["D"]<-coef(theFit)["X2"]			# it gets 0.0 if insignificant
+			pList[[i]]$NonLinearSync2[[j]]["bi"]<-coef(theFit)["X1"]
+		 	pList[[i]]$NonLinearSync2[[j]]["qi"]<-coef(theFit)["X2"]			# it gets 0.0 if insignificant
 	    cat("---------------------------------------------------------------\n")
       cat("Formula:  pI ~ b1*X1 + b2*X2, where X1=pIl*pJl and X2=pIl^2*pJl\n")
   	  cat("---------------------------------------------------------------\n")
@@ -232,13 +236,13 @@ PLEVEL <- 0.05                  # p level for Delta coef
 
 
       #
-			#  Opt 3: nonLinear Regression:  z_2 = AP_1e^{Bz_1}
+			#  Opt 3: nonLinear Regression:  z_2 = A*P_1*z_1*e^{B*z_1} + C
 			#
 			cat(sprintf("... Player %d NONLINEAR regression Opt 3 on Player %d (I=%d, J=%d)\n", i,j,i,j))
 			pI<-dsz[[i]]
 			pIl<- c(rep(NA,times=LAG),dsz[[i]][1:(length(dsz[[i]])-LAG)])
 			pJl<-c(rep(NA,times=LAG),dsz[[j]][1:(length(dsz[[j]])-LAG)])
-			theFit <- nlsLM(pI ~ alpha*pJl*exp(beta * pIl), start=c(alpha=0.5,beta=0.5), na.action = na.exclude )
+			theFit <- nlsLM(pI ~ alpha*pJl*pIl*exp(beta * pIl) + gamma, start=c(alpha=0.5,beta=0.5,gamma=0.5), na.action = na.exclude )
 		 	rSq <- 1-(deviance(theFit)/sum((pI-mean(pI))^2))   	# R^2 = 1 - [ (Residual Sum of Squares / Corrected Sum of Squares) ]
 		 	theFit$control[1]<-rSq								# store r-squared in theFit$control for printing convenience in nlmOut
 			aitch<-sqrt( abs(rSq-nlPivotR2) )          # h = sqrt( this r^2 - auto corr r^2 of this row[i] NOTE: set to 0 if <0 )
@@ -248,7 +252,8 @@ PLEVEL <- 0.05                  # p level for Delta coef
       syncMatrixNL3[j,i]<-aitch
       pList[[i]]$NonLinearSync3[[j]]["rsq"]<-rSq
 		 	pList[[i]]$NonLinearSync3[[j]]["B"]<-coef(theFit)["beta"]
-		 	pList[[i]]$NonLinearSync3[[j]]["D"]<-coef(theFit)["alpha"]			# it gets 0.0 if insignificant
+		 	pList[[i]]$NonLinearSync3[[j]]["A"]<-coef(theFit)["alpha"]
+      pList[[i]]$NonLinearSync3[[j]]["C"]<-coef(theFit)["gamma"]      			# ????? it gets 0.0 if insignificant
 			writeLines(nlmOut(theFit))
       cat(sprintf("h^2 = (R^2 model - R^2 NLAC) = (%6.4f - %6.4f) = %6.4f\n",rSq,nlPivotR2,aitch^2))
       cat(sprintf("h = %6.4f\n",aitch))
@@ -278,7 +283,7 @@ PLEVEL <- 0.05                  # p level for Delta coef
    # write nonlinear sync matrix - 1st based on  z_2 = Ae^{Bz_1} model with H
    #################
    sink(paste(thePath, nlMatrixFileName1,sep="/"),split=FALSE)
-   cat(outName,"nonLinear Sync Matrix - Opt 1: A*e^{B*z_1} + e^{D*p_1}","\n")
+   cat(outName,"nonLinear Sync Matrix - Opt 1: z2 = A*e^{B*z_1} + e^{D*p_1}","\n")
    cat(N)
    prmatrix(syncMatrixNL1, rowlab=rep("",N), collab=rep("",N))
    sink()
@@ -287,16 +292,16 @@ PLEVEL <- 0.05                  # p level for Delta coef
    # write nonlinear sync matrix  - 2nd based on X_2 =P_1X_1(1−X_1) with H
    #################
    sink(paste(thePath, nlMatrixFileName2,sep="/"),split=FALSE)
-   cat(outName,"nonLinear Sync Matrix - Opt 2","\n")
+   cat(outName,"nonLinear Sync Matrix - Opt 2: z2 = p1*z1*(1−z1)","\n")
    cat(N)
    prmatrix(syncMatrixNL2, rowlab=rep("",N), collab=rep("",N))
    sink()
 
    #################
-   # write nonlinear sync matrix  - 3rd based on z_2 = AP_1e^{Bz_1} model with H
+   # write nonlinear sync matrix  - 3rd based on z_2 = AP_1z_1e^{Bz_1} + C model with H
    #################
    sink(paste(thePath, nlMatrixFileName3,sep="/"),split=FALSE)
-   cat(outName,"nonLinear Sync Matrix - Opt 3","\n")
+   cat(outName,"nonLinear Sync Matrix - Opt 3: z2 = A*p1*z1*e^(B*z1) + C","\n")
    cat(N)
    prmatrix(syncMatrixNL3, rowlab=rep("",N), collab=rep("",N))
    sink()
@@ -314,7 +319,7 @@ PLEVEL <- 0.05                  # p level for Delta coef
  cat("Data Results Summary:",outName," ( LAG=",LAG,")\n")
  cat(sprintf("========================================================\n\n"))
    for (i in 1:N ) {
- 	 colHead<-paste("ER1w", 1:N, sep = "/")		# set up column headers
+   colHead<-paste("p",i,"w/p", 1:N,sep="")		# set up column headers
  	 colHead<-colHead[-c(i)]					# remove the ith column
  	 xSet<-1:N									# range to loop over for comparisons
  	 xSet<-xSet[-i]								# remove the "diagnoal" index
@@ -327,42 +332,47 @@ PLEVEL <- 0.05                  # p level for Delta coef
 
  	 cat(sprintf("Linear Sync\n"))
  	 cat(sprintf("%16s",colHead),"\n")
- 	 for (j in xSet ) { cat(sprintf("   R^2 = %8.6f",pList[[i]]$LinearSync[[j]]["rsq"])) }
+ 	 for (j in xSet ) { cat(sprintf("   R^2 = %9.6f",pList[[i]]$LinearSync[[j]]["rsq"])) }
  	 cat("\n")
- 	 for (j in xSet ) {	cat(sprintf("    b1 = %8.6f",pList[[i]]$LinearSync[[j]]["b1"]))   }
+ 	 for (j in xSet ) {	cat(sprintf("    b1 = %9.6f",pList[[i]]$LinearSync[[j]]["b1"]))   }
  	 cat("\n")
- 	 for (j in xSet ) {	cat(sprintf("    b2 = %8.6f",pList[[i]]$LinearSync[[j]]["b2"]))	 }
+ 	 for (j in xSet ) {	cat(sprintf("    b2 = %9.6f",pList[[i]]$LinearSync[[j]]["b2"]))	 }
  	 cat("\n\n")
 
-	 cat(sprintf("Model:  A*e^(B*z1)\n"))
+	 cat(sprintf("Nonlinear Auto - Model:  A*e^(B*z1)\n"))
  	 cat(sprintf("   r^2 = %9.6f\n",pList[[i]]$NonLinearAuto["rsq"]))
- 	 cat(sprintf("     B = %9.6f\n\n",pList[[i]]$NonLinearAuto["B"]))
+ 	 cat(sprintf("     B = %9.6f\n",pList[[i]]$NonLinearAuto["B"]))
+   cat(sprintf("     A = %9.6f\n\n",pList[[i]]$NonLinearAuto["A"]))
 
  	 cat(sprintf("Model:  A*e^(B*z1) + e^(D*p1) [Option 1]\n"))
  	 cat(sprintf("%16s",colHead),"\n")
- 	 for (j in xSet ) {	cat(sprintf("   R^2 = %8.6f",pList[[i]]$NonLinearSync1[[j]]["rsq"])) }
+ 	 for (j in xSet ) {	cat(sprintf("   R^2 = %9.6f",pList[[i]]$NonLinearSync1[[j]]["rsq"])) }
  	 cat("\n")
- 	 for (j in xSet ) {	cat(sprintf("     B = %8.6f",pList[[i]]$NonLinearSync1[[j]]["B"]))	}
+ 	 for (j in xSet ) {	cat(sprintf("     B = %9.6f",pList[[i]]$NonLinearSync1[[j]]["B"]))	}
  	 cat("\n")
- 	 for (j in xSet ) {	cat(sprintf("     D = %8.6f",pList[[i]]$NonLinearSync1[[j]]["D"]))	}
+ 	 for (j in xSet ) {	cat(sprintf("     D = %9.6f",pList[[i]]$NonLinearSync1[[j]]["D"]))	}
+   cat("\n")
+   for (j in xSet ) {	cat(sprintf("     A = %9.6f",pList[[i]]$NonLinearSync1[[j]]["A"]))	}
  	 cat("\n\n")
 
- 	 cat(sprintf("Model:  p1*z1*(1−z1) = b1*(p1*z1) + b2*(p1+z1^2) [Option 2]\n"))
+ 	 cat(sprintf("Model:  p1*z1*(1−z1) = B*(p1*z1) + Q*(p1+z1^2) [Option 2]\n"))
  	 cat(sprintf("%16s",colHead),"\n")
- 	 for (j in xSet ) {	cat(sprintf("   R^2 = %8.6f",pList[[i]]$NonLinearSync2[[j]]["rsq"])) }
+ 	 for (j in xSet ) {	cat(sprintf("   R^2 = %9.6f",pList[[i]]$NonLinearSync2[[j]]["rsq"])) }
  	 cat("\n")
- 	 for (j in xSet ) {	cat(sprintf("     b1 = %8.6f",pList[[i]]$NonLinearSync2[[j]]["B"]))	}
+ 	 for (j in xSet ) {	cat(sprintf("     B = %9.6f",pList[[i]]$NonLinearSync2[[j]]["bi"]))	}
  	 cat("\n")
- 	 for (j in xSet ) {	cat(sprintf("     b2 = %8.6f",pList[[i]]$NonLinearSync2[[j]]["D"]))	}
+ 	 for (j in xSet ) {	cat(sprintf("     Q = %9.6f",pList[[i]]$NonLinearSync2[[j]]["qi"]))	}
  	 cat("\n\n")
 
- 	 cat(sprintf("Model:  A*p1*e^(B*z1) [Option 3]\n"))
+ 	 cat(sprintf("Model:  A*p1*z1*e^(B*z1) + C [Option 3]\n"))
  	 cat(sprintf("%16s",colHead),"\n")
- 	 for (j in xSet ) {	cat(sprintf("   R^2 = %8.6f",pList[[i]]$NonLinearSync3[[j]]["rsq"])) }
+ 	 for (j in xSet ) {	cat(sprintf("   R^2 = %9.6f",pList[[i]]$NonLinearSync3[[j]]["rsq"])) }
  	 cat("\n")
- 	 for (j in xSet ) {	cat(sprintf("     B = %8.6f",pList[[i]]$NonLinearSync3[[j]]["B"]))	}
+ 	 for (j in xSet ) {	cat(sprintf("     A = %9.6f",pList[[i]]$NonLinearSync3[[j]]["A"]))	}
  	 cat("\n")
- 	 for (j in xSet ) {	cat(sprintf("     D = %8.6f",pList[[i]]$NonLinearSync3[[j]]["D"]))	}
+ 	 for (j in xSet ) {	cat(sprintf("     B = %9.6f",pList[[i]]$NonLinearSync3[[j]]["B"]))	}
+   cat("\n")
+   for (j in xSet ) {	cat(sprintf("     C = %9.6f",pList[[i]]$NonLinearSync3[[j]]["C"]))	}
  	 cat("\n\n")
 
 	 }  # for (i in 1:N )
