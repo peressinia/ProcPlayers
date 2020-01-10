@@ -142,7 +142,11 @@ PLEVEL <- 0.05                  # p level for Delta coef
 	 ded=ts.intersect(pI=ts(dsz[i]), pIl=lag( ts(dsz[i]) ,-LAG) )
 	 theFit<-lm( pI ~ pIl, data=ded, na.action=NULL )
 	 pList[[i]]$LinearAutoCorr["rsq"]<-summary(theFit)$r.squared
-	 syncMatrixL[i,i]<-sqrt(summary(theFit)$r.squared)
+	
+	 lPivotR2=summary(theFit)$r.squared
+	 syncMatrixL[i,i]<-sqrt(lPivotR2)
+	 syncMatrixNL2[i,i]<-sqrt(lPivotR2)
+
 	 stargazer(theFit, type = "text")
 	 cat("---------------------------------------------------------------------|\n\n")
 
@@ -160,9 +164,9 @@ PLEVEL <- 0.05                  # p level for Delta coef
    if (rSq<0.0) rSq<-0.0								# Make R^2 zero if it is less than zero for Sync matrix
    nlPivotR2=rSq                        # Save autoRegression for h (aitch) calculations
 
-   syncMatrixNL1[i,i]<-sqrt(rSq)
-	 syncMatrixNL2[i,i]<-sqrt(rSq)
+   	 syncMatrixNL1[i,i]<-sqrt(rSq)
 	 syncMatrixNL3[i,i]<-sqrt(rSq)
+	
 	 writeLines(nlmOut(theFit))
 	 cat("---------------------------------------------------------------------|\n\n")
 
@@ -218,7 +222,7 @@ PLEVEL <- 0.05                  # p level for Delta coef
       theFit<-lm( pI ~ X1 + X2, data=ded, na.action=na.exclude)
 			rSq<-summary(theFit)[["r.squared"]]
 		 	theFit$control[1]<-rSq								# store r-squared in theFit$control for printing convenience in nlmOut
-      aitch<-sqrt(abs(rSq - nlPivotR2))     # h = sqrt( this r^2 - auto corr r^2 of this row[i] NOTE: set to 0 if <0 )
+      aitch<-sqrt(abs(rSq - lPivotR2))     # h = sqrt( this r^2 - LINEAR auto corr r^2 of this row[i] NOTE: set to 0 if <0 )
 			pList[[i]]$NonLinearSync2[[j]]["rsq"]<-rSq
 
 			#	if (summary(theFit)[["coefficients"]]["delt","Pr(>|t|)"]<PLEVEL) syncMatrixNL2[j,i]<-coef(theFit)["delt"] else syncMatrixNL2[j,i]<-0.0
