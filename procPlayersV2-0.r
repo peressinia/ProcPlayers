@@ -234,7 +234,7 @@ PLEVEL <- 0.05                  # p level for Delta coef
       cat("Formula:  pI ~ b1*X1 + b2*X2, where X1=pIl*pJl and X2=pIl^2*pJl\n")
   	  cat("---------------------------------------------------------------\n")
       stargazer(theFit, type = "text")
-      cat(sprintf("h^2 = (R^2 model - R^2 NLAC) = (%6.4f - %6.4f) = %6.4f\n",rSq,nlPivotR2,aitch^2))
+      cat(sprintf("h^2 = (R^2 model - R^2 LAC) = (%6.4f - %6.4f) = %6.4f\n",rSq,lPivotR2,aitch^2))
       cat(sprintf("h = %6.4f\n",aitch))
 			cat("---------------------------------------------------------------------|\n\n")
 
