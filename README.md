@@ -22,9 +22,9 @@ The three nonlinear model options are:
 
 The non-linear matrices are generated with the nonlinear autocorrelation's (z<sub>2</sub> = A・e<sup>B・z<sub>1</sub></sup>) R (square root of R<sup>2</sup>) on the diagonals (a[i,i]) and with the off-diagonals, a[i,j], i<>j, populated with:
 
-> h<sub>i,j</sub> = &radic;|R'<sup>2</sup> - R<sup>2</sup>|,
+> h<sub>i,j</sub> = &#x2213; &radic;|R'<sup>2</sup> - R<sup>2</sup>|, 
 
-where R'<sup>2</sup> is R<sup>2</sup> for the particular model (Option 1, 2, or 3) of player i's influence on player j, and R<sup>2</sup> is R<sup>2</sup> for the nonlinear autocorrelation (square of element on diagonal).
+where R'<sup>2</sup> is R<sup>2</sup> for the particular model (Option 1, 2, or 3) of player i's influence on player j, and R<sup>2</sup> is R<sup>2</sup> for the nonlinear autocorrelation (square of element on diagonal).  NOTE:  The sign of the expression within the absolute value function is retained outside the square root function.
 
 
 ## Getting Started
