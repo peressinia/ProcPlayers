@@ -19,8 +19,8 @@
 # 		(1) -out.txt,   raw output of analyses for debugging/verification
 # 		(2) -lMat.txt,  the linear sync matrix for use with SyncCalc
 # 		(3) -nl1Mat.txt, the Opt 1 nonlinear sync matrix for use with SyncCalc
-#     (4)	-nl2Mat.txt, the Opt 2 nonlinear sync matrix for use with SyncCalc
-#     (5) -nl3Mat.txt, the Opt 3 nonlinear sync matrix for use with SyncCalc
+#     		(4) -nl2Mat.txt, the Opt 2 nonlinear sync matrix for use with SyncCalc
+#     		(5) -nl3Mat.txt, the Opt 3 nonlinear sync matrix for use with SyncCalc
 # 		(6) -sum.txt,   which contains a summary of the results of the analysis
 #
 #     Version 2.0 employs different nonlinear model(s); see Sec. 3.1, p. 6-7
@@ -36,7 +36,9 @@
 #       (a[i,i]) and with the off-diagonals, a[i,j], i<>j, populated with:
 #             h[i,j] = sqrt[ |R'^2 - R^2| ],
 #       where R'^2 is R^2 for model (Option 1, 2, or 3), and R^2 is R^2 for the
-#       nonlinear autocorrelation (square of element on diagonal).
+#       nonlinear autocorrelation (square of element on diagonal).   NOTE: The sign 
+#	of the expression within the absolute value function is retained outside the
+#	square root function.
 #
 ################################################################################
 
