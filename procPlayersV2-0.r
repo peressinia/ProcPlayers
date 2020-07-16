@@ -107,7 +107,7 @@ PLEVEL <- 0.05                  # p level for Delta coef
  cat("\n\n\n")
 
  invisible( dsz[1:dim(dsz)[2]] <- lapply(dsz[1:dim(dsz)[2]], tConvert) )  	# convert to T-stat each of remaining columns
- head(dsz)									# echo head of data to out file
+ # head(dsz)									# echo head of data to out file
 
 
  #################
