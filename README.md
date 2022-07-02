@@ -61,7 +61,5 @@ Version 2.0 employs different nonlinear model(s); see Sec. 3.1, p. 6-7 from Pere
 This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
 
 ## Acknowledgments
-
-* Hat tip to anyone we should
-* Inspiration
-* etc
+* Portions of the work leading up to this program and `SyncCalc 1.1` were funded by a Way-Klingler fellowship grant from Marquette University (SJG, PI). 
+* Authors thank David Marra for his assistance with debugging this program. 
