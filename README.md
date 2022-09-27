@@ -46,7 +46,7 @@ Test data included:  grp3_session3_game2.cvs
 
 ## Versioning
 
-Version 2.0 employs different nonlinear model(s); see Sec. 3.1, p. 6-7 from Peressini & Guastello (2019) NSF proposal description.
+Version 2.0 employs different nonlinear model(s) from previous versions.
 
 
 ## Authors
