@@ -5,25 +5,27 @@
 # R code for processing GSR time series data for use with SyncCalc (see
 #   https://academic.mu.edu/peressini/synccalc/synccalc.htm)
 #
-#  		version 2.0
+#  		version 2.1
 #  		Tony Peressini & Stephen Guastello
-#  		November 15, 2019
+#  		June 20, 2022
 #
 # 	Function: To process player GSR sync data from Guastello lab ... (ver 1.0-1.1)
-# 				- utilizing revised nonlinear model from 2019 NSF Proposal (ver 2.0-)
+# 				- utilizing revised nonlinear model from 2019 NSF Proposal (ver 2.0->)
+#         - cleaned code ............................................(ver 2.1->)
 #
-#   Input:  User chosen CSV file with time as first column (discarded) and
-# 			    monster data as final column (discarded)
+#   Input:  User chosen CSV file with time as first column (discarded) optionally
+# 			    dropping extra colums to the right using the constant COLUMNS_TO_IGNORE
+#						on line 61.
 #
 # 	Output:	Six files named the original filename appended with following
 # 		(1) -out.txt,   raw output of analyses for debugging/verification
 # 		(2) -lMat.txt,  the linear sync matrix for use with SyncCalc
 # 		(3) -nl1Mat.txt, the Opt 1 nonlinear sync matrix for use with SyncCalc
-#     		(4) -nl2Mat.txt, the Opt 2 nonlinear sync matrix for use with SyncCalc
+#     		(4)	-nl2Mat.txt, the Opt 2 nonlinear sync matrix for use with SyncCalc
 #     		(5) -nl3Mat.txt, the Opt 3 nonlinear sync matrix for use with SyncCalc
 # 		(6) -sum.txt,   which contains a summary of the results of the analysis
 #
-#     Version 2.0 employs different nonlinear model(s); see Sec. 3.1, p. 6-7
+#     Version 2.0-> employs different nonlinear model(s); see Sec. 3.1, p. 6-7
 #     from Peressini & Guastello (2019) NSF proposal description.
 #
 #     The three nonlinear model options are:
@@ -31,16 +33,17 @@
 #       Option 2:   z_2 = A*p_1*z_1*(1−z_1)
 #       Option 3:   z_2 = A*p_1*z_1*e^{Bz_1} + C
 #
-#       The non-linear matrices are generated with the nonlinear auto-
-#       correlation's (z_2 = A*e^{Bz_1}) R (square root of R^2) on the diagonals
-#       (a[i,i]) and with the off-diagonals, a[i,j], i<>j, populated with:
-#             h[i,j] = sqrt[ |R'^2 - R^2| ],
-#       where R'^2 is R^2 for model (Option 1, 2, or 3), and R^2 is R^2 for the
-#       nonlinear autocorrelation (square of element on diagonal).   NOTE: The sign 
-#	of the expression within the absolute value function is retained outside the
-#	square root function.
+#       The matrices have the autocorrelation's R (square root of R^2) on the diagonals
+#       (a[i,i]) and, off-diagonal (i<>j): h[i,j] = sign(R'^2 - R^2)*sqrt[ |R'^2 - R^2| ],
+#       where R'^2 is R^2 for model (Option 1, 2, or 3). For Options 1 and 3, R^2 is for
+#       the NONLINEAR autocorrelation (z_2 = A*e^{Bz_1}); for Option 2 (fit by linear
+#       regression) it is for the LINEAR autocorrelation (cf. Guastello & Peressini,
+#       2021, NDPLS 25(1), 19-39). R^2 is the square of the element on the diagonal.
 #
 ################################################################################
+
+
+rm(list = ls())                 # clear the object space
 
 # ######################
 # Library Packages Used
@@ -55,9 +58,12 @@
 # ############
 LAG <- 1                        # for the time series lag
 PLEVEL <- 0.05                  # p level for Delta coef
+COLUMNS_TO_IGNORE <- 0          # used in setting N on line 106
 
 # ######################################################################################
-# Function to convert a column in dataframe x to `t-statistic' by centering and scaling
+# Function to recenter a column in dataframe so that 
+#   the minimum is at zero and, 
+#   the series is rescaled by unit SD. 
 # ######################################################################################
  tConvert <- function (x){
 	   ((x*-1000)-min(x*-1000))/sd(x*-1000)
@@ -94,20 +100,20 @@ PLEVEL <- 0.05                  # p level for Delta coef
  summaryFileName<- paste(outName, "-sum.txt", sep = "")
 
  ds = read.csv(dFile)
- # head(ds)									# echo head of data to console for debugging
+ head(ds)									          # echo head of data to console for debugging
 
- dsz <- ds[ -c(1) ]								# remove first column - time
- N<-(dim(dsz)[2])-1								# set the number of players - ignoring the last monster column
+ dsz <- ds[ -c(1) ]								    # remove first column - time
+ N<-(dim(dsz)[2])-COLUMNS_TO_IGNORE		# set the number of players - possibly ignoring the last few columns on the right
 
  sink(paste(thePath, outFileName,sep="/"),split=FALSE)   			# to append use:  "sink(outFileName,append=TRUE)"
- cat("ProcPlayers (v2.0) output for PP run...\n")
+ cat("ProcPlayers (v2.1) output for PP run...\n")
  cat(sprintf("data file is: %s\n", dFile))
  cat(sprintf("data set has %d variables and %d rows.\n", dim(ds)[2],dim(ds)[1]))
  cat(sprintf("Lag = %d\n",LAG))
  cat("\n\n\n")
 
- invisible( dsz[1:dim(dsz)[2]] <- lapply(dsz[1:dim(dsz)[2]], tConvert) )  	# convert to T-stat each of remaining columns
- # head(dsz)									# echo head of data to out file
+ invisible( dsz[1:dim(dsz)[2]] <- lapply(dsz[1:dim(dsz)[2]], tConvert) )  	# rescale each of remaining columns with tConvert (see above)
+ head(dsz)									# echo head of data to out file
 
 
  #################
@@ -367,7 +373,7 @@ PLEVEL <- 0.05                  # p level for Delta coef
    for (j in xSet ) {	cat(sprintf("     A = %9.6f",pList[[i]]$NonLinearSync1[[j]]["A"]))	}
  	 cat("\n\n")
 
- 	 cat(sprintf("Model:  p1*z1*(1−z1) = B*(p1*z1) + Q*(p1+z1^2) [Option 2]\n"))
+ 	 cat(sprintf("Model:  p1*z1*(1−z1) = B*(p1*z1) + Q*(p1*z1^2) [Option 2]\n"))
  	 cat(sprintf("%16s",colHead),"\n")
  	 for (j in xSet ) {	cat(sprintf("   R^2 = %9.6f",pList[[i]]$NonLinearSync2[[j]]["rsq"])) }
  	 cat("\n")
@@ -389,3 +395,5 @@ PLEVEL <- 0.05                  # p level for Delta coef
 
 	 }  # for (i in 1:N )
  sink()
+
+ 
